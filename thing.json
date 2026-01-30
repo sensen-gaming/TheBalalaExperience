@@ -1,0 +1,14 @@
+{
+    "id": "thebalala",
+    "name": "The Balala Experience",
+    "author": ["Sensen1 on discord"],
+    "description": "Absolute Cinema.",
+    "prefix": "bala",
+    "main_file": "Main.lua",
+    "badge_colour": "c7638f",
+    "dependencies": [
+        "Steamodded (>=1.0.0~BETA-1224a)",
+		"Talisman (>=2.7)"
+    ],
+    "version": "0.0.1"
+}
