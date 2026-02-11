@@ -8,7 +8,8 @@
     "badge_colour": "c7638f",
     "dependencies": [
         "Steamodded (>=1.0.0~BETA-1224a)",
-		"Talisman (>=2.7)"
+		"Talisman (>=2.7)",
+		"FusionJokers (>=1.1.5~BETA20260131)"
     ],
     "version": "0.0.1"
 }
