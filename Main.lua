@@ -181,8 +181,7 @@ SMODS.Joker {
 		if context.joker_main then
 			return {
 				Xmult_mod = card.ability.extra.current_Xmult,
-				message = 'X mult',
-				colour = G.C.MULT
+				message = localize{type='variable',key='a_xmult',vars={card.ability.extra.current_Xmult}}
 			}
 		end
 	end
@@ -193,7 +192,7 @@ SMODS.Joker {
 	loc_txt = {
 		name = 'Tech J',
 		text = {
-			"Each other joker gives {X:mult,C:white}X0.25{} mult currently:{X:mult,C:white}X#1#{}",
+			"Each other joker gives {X:mult,C:white}X0.5{} mult currently:{X:mult,C:white}X#1#{}",
 			"{s:0.8}Bro got the Q4{}"
 		}
 	},
@@ -215,7 +214,7 @@ SMODS.Joker {
 		if context.joker_main then
 			return {
 				Xmult_mod = card.ability.extra.current_Xmult,
-				message = 'X mult'
+				message = localize{type='variable',key='a_xmult',vars={card.ability.extra.current_Xmult}}
 			}
 		end
 	end
@@ -256,8 +255,7 @@ SMODS.Joker {
 		if context.joker_main then
 			return {
 				mult_mod = card.ability.extra.current_mult,
-				message = '+ mult',
-				colour = G.C.MULT
+				message = localize{type='variable',key='a_mult',vars={card.ability.extra.current_mult}}
 			}
 		end
 	end
@@ -277,7 +275,7 @@ SMODS.Joker {
 	loc_txt = {
 		name = 'Bismuth Joker',
 		text = {
-			"If played hand has scoring stone card then each card has 1 in 2 chance to turn into polychrome",
+			"Each played scoring stone card has 1 in 2 chance to turn into polychrome",
 			"{s:0.8}wow, great sprite{}"
 		}
 	},
@@ -324,7 +322,7 @@ SMODS.Joker {
 	end,
 	atlas = 'Sprites',
 	pos = { x = 3, y = 1 },
-	cost = 20,
+	cost = 35,
 	calculate = function(self, card, context)
 		if context.individual and context.cardarea == G.play then
 			if context.scoring_hand then
@@ -344,8 +342,9 @@ SMODS.Joker {
 		if context.joker_main then
 			return {
 				mult_mod = card.ability.extra.current_mult,
+				message = localize{type='variable',key='a_mult',vars={card.ability.extra.current_mult}},
 				chips = card.ability.extra.current_chips,
-				message = '+ mult and chips',
+				message = localize{type='variable',key='a_mult',vars={card.ability.extra.current_chips}},
 				colour = G.C.PURPLE
 			}
 		end
@@ -398,7 +397,7 @@ SMODS.Joker {
 local card_set_cost_ref = Card.set_cost
 function Card:set_cost()
     card_set_cost_ref(self)
-    if next(SMODS.find_card("j_bala_astronaut_joker")) then
+    if next(SMODS.find_card("j_bala_astronaut_joker")) or next(SMODS.find_card("j_bala_cosmonaut_joker")) then
         if (self.ability.set == 'Planet' or (self.ability.set == 'Booster' and self.config.center.kind == 'Celestial')) then self.cost = 0 end
         self.sell_cost = math.max(1, math.floor(self.cost / 2)) + (self.ability.extra_value or 0)
         self.sell_cost_label = self.facing == 'back' and '?' or self.sell_cost
@@ -421,6 +420,420 @@ FusionJokers.fusions:register_fusion{
 	},
 	result_joker = "j_bala_astronaut_joker",
 	cost = 10
+}
+
+SMODS.ConsumableType{
+	key = 'Mega_card',
+	collection_rows = {6,2},
+	primary_colour = G.C.MULT,
+	secondary_colour = G.C.PURPLE,
+	loc_txt = {
+		collection = 'MEGA Cards',
+		name = 'Mega Card',
+		undiscovered = {
+			name = 'Unknown Mega',
+			text = {'Get rich, bozo'}
+		}
+	}
+}
+
+SMODS.Atlas {
+	key = "Spritesconsume",
+	path = "atlasconsumable.png",
+	px = 63,
+	py = 93
+}
+
+SMODS.Consumable {
+    key = 'mega_fool',
+    set = 'Mega_card',
+    loc_txt = {
+		name = 'Mega Fool',
+		text = {
+			'Create one of every Tarot and Planet as negative',
+			'{s:0.8}this took WAY too long to figure out how to make{}',
+			'{s:0.5}you could say i was a fool for not knowing how to do it{}'
+		}
+	},
+	atlas = 'Spritesconsume',
+	pos = { x = 0, y = 0 },
+    can_use = function(self, card)
+        return true 
+    end,
+    use = function(self, card, area, copier)
+		for k, v in pairs(G.P_CENTERS) do
+			if v.set == 'Tarot' then
+				local new_card = SMODS.add_card({set = "Tarot", key = v.key})
+				new_card:set_edition("e_negative")
+			end
+			if v.set == 'Planet' then
+				local new_card = SMODS.add_card({set = "Planet", key = v.key})
+				new_card:set_edition("e_negative")
+			end
+		end
+	end
+}
+
+SMODS.Atlas {
+	key = "Spritepack",
+	path = "atlaspack.png",
+	px = 50,
+	py = 82
+}
+
+SMODS.Booster {
+    key = 'mega_pack',
+    atlas = 'Spritepack',
+	pos = { x = 0, y = 0 },
+    loc_txt = {
+        name = "Mega Pack",
+        text = {
+            "Choose 1 of 5",
+            "Mega cards"
+        }
+    },
+    config = { choose = 1, extra = 5 },
+    cost = 50,
+    weight = 1,
+    draw_hand = true,
+    create_card = function(self, card, i)
+        return {
+            set = "Mega_card",
+            area = G.pack_cards,
+            skip_materialize = true,
+            key_append = "k_bala_mega_pack"
+        }
+    end
+}
+
+SMODS.Consumable {
+    key = 'mega_magician',
+    set = 'Mega_card',
+    loc_txt = {
+		name = 'Mega Magician',
+		text = {
+			'Turn all cards in the deck lucky',
+			'{s:0.8}i cast, tungsten ballsa- *DING*{}'
+		}
+	},
+	atlas = 'Spritesconsume',
+	pos = { x = 0, y = 0 },
+    can_use = function(self, card)
+        return true 
+    end,
+    use = function(self, card, area, copier)
+		for k, v in ipairs(G.playing_cards) do
+			v:set_ability("m_lucky", true)
+		end
+	end
+}
+
+function quick_level_multiply(amount, hand)
+	hand.level = hand.level * amount
+	hand.chips = hand.chips * amount
+	hand.mult = hand.mult * amount
+end
+
+function quick_level_up(amount, hand)
+	local base_hand_chips = hand.chips/hand.level
+	local base_hand_mult = hand.mult/hand.level
+	hand.level = hand.level + 1
+	hand.chips = hand.chips + base_hand_chips*amount
+	hand.mult = hand.mult + base_hand_mult*amount
+end
+
+SMODS.Consumable {
+    key = 'mega_priestess',
+    set = 'Mega_card',
+    loc_txt = {
+		name = 'Mega Priestess',
+		text = {
+			'Multiply all poker hand levels by 2',
+			'{s:0.8}what even is a priestess?{}'
+		}
+	},
+	atlas = 'Spritesconsume',
+	pos = { x = 0, y = 0 },
+    can_use = function(self, card)
+        return true 
+    end,
+    use = function(self, card, area, copier)
+		for k, v in pairs(G.GAME.hands) do
+			quick_level_multiply(2, v)
+		end
+	end
+}
+
+SMODS.Consumable {
+    key = 'mega_empress',
+    set = 'Mega_card',
+    loc_txt = {
+		name = 'Mega Empress',
+		text = {
+			'Turn all cards in the deck mult',
+			'{s:0.8}idk what to put here{}'
+		}
+	},
+	atlas = 'Spritesconsume',
+	pos = { x = 0, y = 0 },
+    can_use = function(self, card)
+        return true 
+    end,
+    use = function(self, card, area, copier)
+		for k, v in ipairs(G.playing_cards) do
+			v:set_ability("m_mult", true)
+		end
+	end
+}
+
+SMODS.Consumable {
+    key = 'mega_emperor',
+    set = 'Mega_card',
+    loc_txt = {
+		name = 'Mega Emperor',
+		text = {
+			'Create 10 negative emperors',
+			'{s:0.8}50 years in thy dungeon!{}'
+		}
+	},
+	atlas = 'Spritesconsume',
+	pos = { x = 0, y = 0 },
+    can_use = function(self, card)
+        return true 
+    end,
+    use = function(self, card, area, copier)
+    	local loupcount = 0
+		while loupcount < 10 do
+			local new_card = SMODS.add_card({set = "Tarot", key = "c_emperor"})
+			new_card:set_edition("e_negative")
+			loupcount = loupcount + 1
+		end
+	end
+}
+
+SMODS.Consumable {
+    key = 'mega_hierophant',
+    set = 'Mega_card',
+    loc_txt = {
+		name = 'Mega Hierophant',
+		text = {
+			'Turn all cards in the deck bonus',
+			'{s:0.8}w h a t{}'
+		}
+	},
+	atlas = 'Spritesconsume',
+	pos = { x = 0, y = 0 },
+    can_use = function(self, card)
+        return true 
+    end,
+    use = function(self, card, area, copier)
+		for k, v in ipairs(G.playing_cards) do
+			v:set_ability("m_bonus", true)
+		end
+	end
+}
+
+SMODS.Consumable {
+    key = 'mega_lovers',
+    set = 'Mega_card',
+    loc_txt = {
+		name = 'Mega Lovers',
+		text = {
+			'Turn all cards in the deck wild',
+			'{s:0.8}i prefer yuri{}'
+		}
+	},
+	atlas = 'Spritesconsume',
+	pos = { x = 0, y = 0 },
+    can_use = function(self, card)
+        return true 
+    end,
+    use = function(self, card, area, copier)
+		for k, v in ipairs(G.playing_cards) do
+			v:set_ability("m_wild", true)
+		end
+	end
+}
+
+SMODS.Consumable {
+    key = 'mega_chariot',
+    set = 'Mega_card',
+    loc_txt = {
+		name = 'Mega Chariot',
+		text = {
+			'Turn all cards in the deck steel',
+			'{s:0.8}the only enhancement tarot i use{}'
+		}
+	},
+	atlas = 'Spritesconsume',
+	pos = { x = 0, y = 0 },
+    can_use = function(self, card)
+        return true 
+    end,
+    use = function(self, card, area, copier)
+		for k, v in ipairs(G.playing_cards) do
+			v:set_ability("m_steel", true)
+		end
+	end
+}
+
+SMODS.Consumable {
+    key = 'mega_justice',
+    set = 'Mega_card',
+    loc_txt = {
+		name = 'Mega Justice',
+		text = {
+			'Turn all cards in the deck glass',
+			'{s:0.8}if you combine this with money you get injustice(real){}'
+		}
+	},
+	atlas = 'Spritesconsume',
+	pos = { x = 0, y = 0 },
+    can_use = function(self, card)
+        return true 
+    end,
+    use = function(self, card, area, copier)
+		for k, v in ipairs(G.playing_cards) do
+			v:set_ability("m_glass", true)
+		end
+	end
+}
+
+SMODS.Consumable {
+    key = 'mega_hermit',
+    set = 'Mega_card',
+    loc_txt = {
+		name = 'Mega Hermit',
+		text = {
+			'cash +^1.5',
+			'{s:0.8}greed.{}'
+		}
+	},
+	atlas = 'Spritesconsume',
+	pos = { x = 0, y = 0 },
+    can_use = function(self, card)
+        return true 
+    end,
+    use = function(self, card, area, copier)
+		G.GAME.dollars = G.GAME.dollars + (G.GAME.dollars^1.5)
+	end
+}
+
+SMODS.Consumable {
+    key = 'mega_wheel',
+    set = 'Mega_card',
+    loc_txt = {
+		name = 'Mega Wheel',
+		text = {
+			'Turn every joker negative',
+			'{s:0.8}greed 2.{}'
+		}
+	},
+	atlas = 'Spritesconsume',
+	pos = { x = 0, y = 0 },
+    can_use = function(self, card)
+        return true 
+    end,
+    use = function(self, card, area, copier)
+		for k, v in pairs(G.jokers.cards) do
+			v:set_edition("e_negative")
+		end
+	end
+}
+
+SMODS.Rarity{
+	key = "mythic",
+	badge_colour = HEX("F5B342"),
+	pools = {},
+	loc_txt = "Mythic"
+}
+
+SMODS.Joker {
+	key = 'cosmonaut_joker',
+	loc_txt = {
+		name = 'Cosmonaut Joker',
+		text = {
+			"Make space related things free",
+			"When a hand is played, level it up",
+			"Give Xmult equal to 1 + 0.1*(played hand level * played hand amount)",
+			"Currently:{X:mult,C:white}X#1#{}",
+			"{s:0.8}Sail the infnite galaxies.{}"
+		}
+	},
+	rarity = 4,
+	atlas = 'Sprites',
+	pos = { x = 0, y = 2 },
+	add_to_deck = function(self, card, from_debuff)
+		G.E_MANAGER:add_event(Event({
+		   	func = function()
+		        for k, v in pairs(G.I.CARD) do
+    		        if v.set_cost then v:set_cost() end
+		        end
+				return true
+    		end
+        }))
+    end,
+    remove_from_deck = function(self, card, from_debuff)
+        G.E_MANAGER:add_event(Event({
+            func = function()
+                for k, v in pairs(G.I.CARD) do
+                    if v.set_cost then v:set_cost() end
+                end
+                return true
+            end
+        }))
+    end,
+    config = { extra = { current_Xmult = 1} },
+	loc_vars = function(self, info_queue, card)
+    	return {vars = { card.ability.extra.current_Xmult} }
+	end,
+	cost = 32,
+	calculate = function(self, card, context)
+		if context.before then
+            return {
+                level_up = true,
+                message = localize('k_level_up_ex')
+            }
+        end
+        if context.joker_main then
+			card.ability.extra.current_Xmult = (1 + 0.1 * ((G.GAME.hands[context.scoring_name].level * G.GAME.hands[context.scoring_name].played)))
+			return {
+				Xmult_mod = card.ability.extra.current_Xmult,
+				message = localize{type='variable',key='a_mult',vars={card.ability.extra.current_Xmult}}
+			}
+		end
+	end
+}
+
+FusionJokers.fusions:register_fusion{
+	jokers = {
+		{ name = "j_fuse_big_bang"},                            
+		{ name = "j_bala_astronaut_joker"}
+	},
+	result_joker = "j_bala_cosmonaut_joker",
+	cost = 10
+}
+
+SMODS.Consumable {
+    key = 'mega_strength',
+    set = 'Mega_card',
+    loc_txt = {
+		name = 'Mega Strength',
+		text = {
+			'Turn all cards in the deck ace',
+			'{s:0.8}{}'
+		}
+	},
+	atlas = 'Spritesconsume',
+	pos = { x = 0, y = 0 },
+    can_use = function(self, card)
+        return true 
+    end,
+    use = function(self, card, area, copier)
+		for k, v in ipairs(G.playing_cards) do
+			v.id = 14
+		end
+	end
 }
 
 -- TODO:
