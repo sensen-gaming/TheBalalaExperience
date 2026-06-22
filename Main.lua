@@ -107,18 +107,13 @@ SMODS.Joker {
 	pos = { x = 2, y = 0 },
 	cost = 5,
 	calculate = function(self, card, context)
-		if context.individual and context.cardarea == G.play then
-			if context.scoring_hand then
-				for k, v in ipairs(context.scoring_hand) do
-					if v:get_id() == 13 and v.edition == nil then
-						return {
-							context.other_card:set_edition("e_foil", true),
-							message = 'Bald!'
-						}
-					end
+		if context.before then
+			for k, v in ipairs(context.scoring_hand) do
+				if v:get_id() == 13 and v.edition == nil then
+					v:set_edition("e_foil", true)
+					SMODS.calculate_effect(v, { message = "Bald!" })
 				end
 			end
-			
 		end
 	end
 }
@@ -166,14 +161,12 @@ SMODS.Joker {
 	pos = { x = 4, y = 0 },
 	cost = 10,
 	calculate = function(self, card, context)
-		if context.cardarea == G.play and context.individual then
+		if context.before then
 			if #context.scoring_hand == 1 then
 				for k, v in ipairs(context.scoring_hand) do
 					if v:is_face() then
 						card.ability.extra.current_Xmult = 0.3 + card.ability.extra.current_Xmult
-						return {
-							message = 'rah'
-						}
+						SMODS.calculate_effect(v, { message = "rah" })
 					end
 				end
 			end
@@ -239,17 +232,13 @@ SMODS.Joker {
 	pos = { x = 1, y = 1 },
 	cost = 15,
 	calculate = function(self, card, context)
-		if context.individual and context.cardarea == G.play then
-			if context.scoring_hand then
-				for k, v in ipairs(context.scoring_hand) do
-					if SMODS.has_enhancement(v, "m_stone") then
-						card.ability.extra.current_mult = card.ability.extra.current_mult + 1
-					end
-					return {
-						context.other_card:set_ability("m_stone", true),
-						message = 'Moai emoji'
-					}
+		if context.before then
+			for k, v in ipairs(context.scoring_hand) do
+				v:set_ability("m_stone", true)
+				if SMODS.has_enhancement(v, "m_stone") then
+					card.ability.extra.current_mult = card.ability.extra.current_mult + 1
 				end
+				SMODS.calculate_effect(v, { message = "Moai emoji" })
 			end
 		end
 		if context.joker_main then
@@ -284,18 +273,13 @@ SMODS.Joker {
 	pos = { x = 2, y = 1 },
 	cost = 10,
 	calculate = function(self, card, context)
-		if context.individual and context.cardarea == G.play then
-			if context.scoring_hand then
-				for k, v in ipairs(context.scoring_hand) do
-					if SMODS.has_enhancement(v, "m_stone") then
-						if pseudorandom('bismuth_upgrade') < G.GAME.probabilities.normal / 2 then
-							return {
-								context.other_card:set_edition("e_polychrome", true),
-								message = 'Ooo, shiny!'
-							}
-						end
+		if context.before then
+			for k, v in ipairs(context.scoring_hand) do
+				if SMODS.has_enhancement(v, "m_stone") then
+					if pseudorandom('bismuth_upgrade') < G.GAME.probabilities.normal / 2 then
+						v:set_edition("e_polychrome", true)
+						SMODS.calculate_effect(v, { message = "Ooo, shiny!" })
 					end
-					
 				end
 			end
 		end
@@ -324,19 +308,15 @@ SMODS.Joker {
 	pos = { x = 3, y = 1 },
 	cost = 35,
 	calculate = function(self, card, context)
-		if context.individual and context.cardarea == G.play then
-			if context.scoring_hand then
-				for k, v in ipairs(context.scoring_hand) do
-					if SMODS.has_enhancement(v, "m_stone") then
-						card.ability.extra.current_mult = card.ability.extra.current_mult + 3
-						card.ability.extra.current_chips = card.ability.extra.current_chips + 15
-					end
-					return {
-						context.other_card:set_ability("m_stone", true),
-						context.other_card:set_edition("e_polychrome", true),
-						message = 'MOooai, shiny emoji'
-					}
+		if context.before then
+			for k, v in ipairs(context.scoring_hand) do
+				v:set_ability("m_stone", true)
+				v:set_edition("e_polychrome", true)
+				if SMODS.has_enhancement(v, "m_stone") then
+					card.ability.extra.current_mult = card.ability.extra.current_mult + 3
+					card.ability.extra.current_chips = card.ability.extra.current_chips + 15
 				end
+				SMODS.calculate_effect(v, { message = "MOooai, shiny emoji" })
 			end
 		end
 		if context.joker_main then
@@ -397,7 +377,7 @@ SMODS.Joker {
 local card_set_cost_ref = Card.set_cost
 function Card:set_cost()
     card_set_cost_ref(self)
-    if next(SMODS.find_card("j_bala_astronaut_joker")) or next(SMODS.find_card("j_bala_cosmonaut_joker")) then
+    if next(SMODS.find_card("j_bala_astronaut_joker")) or next(SMODS.find_card("j_bala_cosmonaut_joker")) or next(SMODS.find_card("j_bala_voidsmonaut_joker")) then
         if (self.ability.set == 'Planet' or (self.ability.set == 'Booster' and self.config.center.kind == 'Celestial')) then self.cost = 0 end
         self.sell_cost = math.max(1, math.floor(self.cost / 2)) + (self.ability.extra_value or 0)
         self.sell_cost_label = self.facing == 'back' and '?' or self.sell_cost
@@ -529,17 +509,9 @@ SMODS.Consumable {
 }
 
 function quick_level_multiply(amount, hand)
-	hand.level = hand.level * amount
-	hand.chips = hand.chips * amount
-	hand.mult = hand.mult * amount
-end
-
-function quick_level_up(amount, hand)
-	local base_hand_chips = hand.chips/hand.level
-	local base_hand_mult = hand.mult/hand.level
-	hand.level = hand.level + 1
-	hand.chips = hand.chips + base_hand_chips*amount
-	hand.mult = hand.mult + base_hand_mult*amount
+	hand.level = hand.level * 2
+	hand.chips = hand.chips * 2
+	hand.mult = hand.mult * 2
 end
 
 SMODS.Consumable {
@@ -558,7 +530,7 @@ SMODS.Consumable {
         return true 
     end,
     use = function(self, card, area, copier)
-		for k, v in pairs(G.GAME.hands) do
+		for k, v in ipairs(G.GAME.hands) do
 			quick_level_multiply(2, v)
 		end
 	end
@@ -799,7 +771,7 @@ SMODS.Joker {
 			card.ability.extra.current_Xmult = (1 + 0.1 * ((G.GAME.hands[context.scoring_name].level * G.GAME.hands[context.scoring_name].played)))
 			return {
 				Xmult_mod = card.ability.extra.current_Xmult,
-				message = localize{type='variable',key='a_mult',vars={card.ability.extra.current_Xmult}}
+				message = localize{type='variable',key='a_Xmult',vars={card.ability.extra.current_Xmult}}
 			}
 		end
 	end
@@ -820,8 +792,8 @@ SMODS.Consumable {
     loc_txt = {
 		name = 'Mega Strength',
 		text = {
-			'Turn all cards in the deck ace',
-			'{s:0.8}{}'
+			'+2 rank all cards in the deck',
+			'{s:0.8}Kinda useless{}'
 		}
 	},
 	atlas = 'Spritesconsume',
@@ -831,9 +803,184 @@ SMODS.Consumable {
     end,
     use = function(self, card, area, copier)
 		for k, v in ipairs(G.playing_cards) do
-			v.id = 14
+			SMODS.modify_rank(v, 2)
 		end
 	end
+}
+
+SMODS.Atlas {
+    key = "Spritesdeck",
+    path = "atlasdeck.png",
+    px = 69,
+    py = 93
+}
+
+SMODS.Back {
+    key = "antimatter_deck",
+    loc_txt = {
+        name = "The Antimatter Deck",
+        text={
+        "{C:dark_edition}+1 Joker Slots{}",
+        "{C:blue}+1 Hands{}",
+        "{C:red}+1 Discards{}",
+        "{C:blue}+1 Hand Size{}",
+        "{C:money}Start With 15${}"
+        }
+    },
+	config = { hands = 1, joker_slot = 1, discards = 1, hand_size = 1, dollars = 11 },
+	pos = { x = 0, y = 0 },
+	order = 1,
+	atlas = "Spritesdeck",
+    unlocked = true
+}
+
+SMODS.Back{
+    key = "petrified_deck",
+    loc_txt = {
+        name = "-50 Y",
+        text={
+        "Spawn with Deepslate",
+        "Your {C:red}Pickaxe{} Has Almost",
+        "No Durabillity Left"
+        },
+    },
+	
+	config = { hands = 0, discards = -2},
+	pos = { x = 1, y = 0 },
+	order = 1,
+	atlas = "Spritesdeck",
+    unlocked = true,
+	apply = function(self)
+        G.E_MANAGER:add_event(Event({
+			func = function()
+				if G.consumeables then
+                	local card = create_card("Joker", G.jokers, nil, nil, nil, nil, "j_bala_deepslate_joker")
+                    card:add_to_deck()
+                    G.jokers:emplace(card)
+                    return true
+                end
+			end
+		}))
+	end,
+}
+
+SMODS.Joker {
+	key = 'voidsmonaut_joker',
+	loc_txt = {
+		name = 'Voidsmonaut Joker',
+		text = {
+			"Make space related things free",
+			"When a hand is played, level it up twice",
+			"Turn every played and scored card into polychrome stone cards",
+			"Give Xmult and Xchips equal to 1 + {X:mult,C:white}0.1{}/{X:chips,C:white}0.2{}*",
+			"(played hand level * played hand amount * amount of rock cards scored)",
+			"Currently:{X:mult,C:white}X#1#{} {X:chips,C:white}X#2#{}",
+			"{s:0.8}Sail the empty void...{}"
+		}
+	},
+	rarity = "bala_mythic",
+	atlas = 'Sprites',
+	pos = { x = 1, y = 2 },
+	add_to_deck = function(self, card, from_debuff)
+		G.E_MANAGER:add_event(Event({
+		   	func = function()
+		        for k, v in pairs(G.I.CARD) do
+    		        if v.set_cost then v:set_cost() end
+		        end
+				return true
+    		end
+        }))
+    end,
+    remove_from_deck = function(self, card, from_debuff)
+        G.E_MANAGER:add_event(Event({
+            func = function()
+                for k, v in pairs(G.I.CARD) do
+                    if v.set_cost then v:set_cost() end
+                end
+                return true
+            end
+        }))
+    end,
+    config = { extra = { current_Xmult = 1, current_Xchips = 1, current_stone = 0} },
+	loc_vars = function(self, info_queue, card)
+    	return {vars = { card.ability.extra.current_Xmult, card.ability.extra.current_Xchips, card.ability.extra.current_stone} }
+	end,
+	cost = 90,
+	calculate = function(self, card, context)
+		if context.before then
+			SMODS.upgrade_poker_hands{ hands = context.scoring_name, level_up = 2, from = card }
+			for k, v in ipairs(context.scoring_hand) do
+				v:set_ability("m_stone", true)
+				v:set_edition("e_polychrome", true)
+				if SMODS.has_enhancement(v, "m_stone") then
+					card.ability.extra.current_stone = card.ability.extra.current_stone + 1
+				end
+				SMODS.calculate_effect(v, { message = "MOooai, shiny emoji" })
+			end
+        end
+        if context.joker_main then
+			card.ability.extra.current_Xmult = (1 + 0.1 * ((G.GAME.hands[context.scoring_name].level * G.GAME.hands[context.scoring_name].played * card.ability.extra.current_stone)))
+			card.ability.extra.current_Xchips = (1 + 0.2 * ((G.GAME.hands[context.scoring_name].level * G.GAME.hands[context.scoring_name].played * card.ability.extra.current_stone)))
+			return {
+				Xmult_mod = card.ability.extra.current_Xmult,
+				Xchips_mod = card.ability.extra.current_Xchips
+			}
+		end
+	end
+}
+
+FusionJokers.fusions:register_fusion{
+	jokers = {
+		{ name = "j_bala_bedrock_joker"},                            
+		{ name = "j_bala_cosmonaut_joker"}
+	},
+	result_joker = "j_bala_voidsmonaut_joker",
+	cost = 25
+}
+
+SMODS.Joker {
+    key = "photo_chad",
+    loc_txt = {
+		name = 'Photo Chad',
+		text = {
+			"Retrigger first card 2 times",
+			"When face card is triggered gain {X:mult,C:white}X2{} mult",
+			"{s:0.8}Hell yeah!{}"
+		}
+	},
+    blueprint_compat = true,
+    rarity = "fuse_fusion",
+    atlas = 'Sprites',
+    cost = 15,
+    pos = { x = 2, y = 2 },
+    config = { extra = { repetitions = 2, Xmult = 2 } },
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.repetitions, card.ability.extra.Xmult } }
+    end,
+    calculate = function(self, card, context)
+        if context.repetition and context.cardarea == G.play and context.other_card == context.scoring_hand[1] then
+            return {
+                repetitions = card.ability.extra.repetitions
+            }
+        end
+        if context.individual and context.cardarea == G.play and context.other_card:is_face() then
+			for k, v in ipairs(context.scoring_hand) do
+				return {
+					Xmult_mod = card.ability.extra.Xmult,
+					message = localize{type='variable',key='a_xmult',vars={card.ability.extra.Xmult}}
+				}
+			end
+		end
+    end
+}
+
+FusionJokers.fusions:register_fusion{
+	jokers = {
+		{ name = "j_photograph"},                            
+		{ name = "j_hanging_chad"}
+	},
+	result_joker = "j_bala_photo_chad",
+	cost = 7
 }
 
 -- TODO:

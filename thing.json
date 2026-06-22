@@ -5,11 +5,12 @@
     "description": "Absolute Cinema.",
     "prefix": "bala",
     "main_file": "Main.lua",
+	"priority": 301,
     "badge_colour": "c7638f",
     "dependencies": [
         "Steamodded (>=1.0.0~BETA-1814a)",
-		"Talisman (>=2.7)",
+		"Amulet (>=3.5.2)",
 		"FusionJokers (>=1.2.1)"
     ],
-    "version": "0.0.4"
+    "version": "0.0.5"
 }
