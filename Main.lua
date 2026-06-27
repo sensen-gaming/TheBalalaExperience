@@ -474,7 +474,7 @@ SMODS.Booster {
     },
     config = { choose = 1, extra = 5 },
     cost = 50,
-    weight = 1,
+    weight = 2,
     draw_hand = true,
     create_card = function(self, card, i)
         return {
@@ -820,14 +820,15 @@ SMODS.Back {
     loc_txt = {
         name = "The Antimatter Deck",
         text={
-        "{C:dark_edition}+1 Joker Slots{}",
-        "{C:blue}+1 Hands{}",
-        "{C:red}+1 Discards{}",
-        "{C:blue}+1 Hand Size{}",
-        "{C:money}Start With 15${}"
+        "{C:dark_edition}+5 Joker Slots{}",
+        "{C:blue}+2 Hands{}",
+        "{C:red}+2 Discards{}",
+        "{C:blue}+2 Hand Size{}",
+        "{C:money}Start With 25${}",
+        "{C:red}Overstock Voucher{}"
         }
     },
-	config = { hands = 1, joker_slot = 1, discards = 1, hand_size = 1, dollars = 11 },
+	config = { hands = 2, joker_slot = 5, discards = 2, hand_size = 2, dollars = 21, vouchers = {'v_overstock_norm'}},
 	pos = { x = 0, y = 0 },
 	order = 1,
 	atlas = "Spritesdeck",
@@ -861,7 +862,7 @@ SMODS.Back{
                 end
 			end
 		}))
-	end,
+	end
 }
 
 SMODS.Joker {
@@ -981,6 +982,286 @@ FusionJokers.fusions:register_fusion{
 	},
 	result_joker = "j_bala_photo_chad",
 	cost = 7
+}
+
+SMODS.Joker {
+    key = "roaring_knight",
+    loc_txt = {
+		name = 'Roaring Knight',
+		text = {
+			"{C:mult}+#1#{} when dark suited card scores",
+			"Each dark suited card played gives {C:mult}+5{} to joker ability",
+			"{s:0.8}IS THAT THE ROA-{}"
+		}
+	},
+    blueprint_compat = true,
+    rarity = 4,
+    atlas = 'Sprites',
+    cost = 30,
+    pos = { x = 4, y = 2 },
+    config = { extra = { mult = 30 } },
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.mult } }
+    end,
+    calculate = function(self, card, context)
+    	if context.before and context.cardarea == G.jokers then
+        	local dark = 0
+			for k, v in ipairs(context.scoring_hand) do
+				if v:is_suit('Spades') or v:is_suit('Clubs') then
+					dark = dark + 1
+				end
+			end
+			if dark > 0 then
+				card.ability.extra.mult = card.ability.extra.mult + (5*dark)
+				return {
+					message = localize('k_upgrade_ex'),
+					colour = G.C.MULT,
+					card = card
+				}
+			end
+		end
+		if context.individual and context.cardarea == G.play and
+		(context.other_card:is_suit('Clubs') or context.other_card:is_suit('Spades')) then
+			return {
+				mult_mod = card.ability.extra.mult,
+				message = localize{type='variable',key='a_mult',vars={card.ability.extra.mult}},
+				colour = G.C.MULT,
+				card = card
+			}
+		end
+    end
+}
+
+SMODS.Atlas {
+    key = "Spritestags",
+    path = "atlastag.png",
+    px = 32,
+    py = 32
+}
+
+FusionJokers.fusions:register_fusion{
+	jokers = {
+		{ name = "j_fuse_club_wizard"},                            
+		{ name = "j_fuse_spade_archer"}
+	},
+	result_joker = "j_bala_roaring_knight",
+	cost = 6
+}
+
+SMODS.Tag {
+    key = "mega_tag",
+    loc_txt = {
+        name = "MEGA Tag",
+        text = {
+        	"Opens a MEGA pack."
+        }
+    },
+    atlas = "Spritestags",
+    pos = {x = 0, y = 0},
+    min_ante = 0,
+    apply = function(self, tag, context)
+    	if context.type == 'new_blind_choice' then
+            local lock = tag.ID
+            G.CONTROLLER.locks[lock] = true
+            tag:yep('+', G.C.PURPLE, function()
+                local booster = SMODS.create_card { key = 'p_bala_mega_pack', area = G.play }
+                booster.T.x = G.play.T.x + G.play.T.w / 2 - G.CARD_W * 1.27 / 2
+                booster.T.y = G.play.T.y + G.play.T.h / 2 - G.CARD_H * 1.27 / 2
+                booster.T.w = G.CARD_W * 1.27
+                booster.T.h = G.CARD_H * 1.27
+                booster.cost = 0
+                booster.from_tag = true
+                G.FUNCS.use_card({ config = { ref_table = booster } })
+                booster:start_materialize()
+                G.CONTROLLER.locks[lock] = nil
+                return true
+            end)
+            tag.triggered = true
+            return true
+        end
+	end
+}
+
+SMODS.Joker {
+    key = "light_angel",
+    loc_txt = {
+		name = 'Light Angel',
+		text = {
+			"{C:money}+2${} when light suited card scores",
+			"Each light suited card scored gives 1+(money/20) {X:mult,C:white}Xmult{}",
+			"When light suited card is played and scored, 1 in 2 chance to retrigger",
+			"{s:0.8}Lighten up{}"
+		}
+	},
+    blueprint_compat = true,
+    rarity = 4,
+    atlas = 'Sprites',
+    cost = 30,
+    pos = { x = 3, y = 2 },
+    config = { extra = { Xmult = 1, money = 2 } },
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.Xmult, card.ability.extra.money } }
+    end,
+    calculate = function(self, card, context)
+    	if context.individual and context.cardarea == G.play and
+		(context.other_card:is_suit('Diamonds') or context.other_card:is_suit('Hearts')) then
+			G.GAME.dollar_buffer = (G.GAME.dollar_buffer or 0) + to_big(card.ability.extra.money)
+			G.E_MANAGER:add_event(Event({func = (function() G.GAME.dollar_buffer = 0; return true end)}))
+			card.ability.extra.Xmult = 1 + math.floor(to_number(G.GAME.dollars) / 20)
+			return {
+				dollars = card.ability.extra.money,
+				Xmult_mod = card.ability.extra.Xmult,
+				message = localize{type='variable',key='a_xmult',vars={card.ability.extra.Xmult}},
+				card = card
+			}
+		end
+		if context.repetition and context.cardarea == G.play and
+		(context.other_card:is_suit('Hearts') or context.other_card:is_suit('Diamonds')) then
+			if pseudorandom('light_angel') < G.GAME.probabilities.normal / 2 then
+				return {
+					message = localize('k_again_ex'),
+					repetitions = 1,
+					card = card
+				}
+			end
+		end
+    end
+}
+
+FusionJokers.fusions:register_fusion{
+	jokers = {
+		{ name = "j_fuse_heart_paladin"},                            
+		{ name = "j_fuse_diamond_bard"}
+	},
+	result_joker = "j_bala_light_angel",
+	cost = 6
+}
+
+SMODS.Joker {
+    key = "8tune_teller",
+    loc_txt = {
+		name = '8tune Teller',
+		text = {
+			"Get {C:mult}+2 Mult{} for each tarot used total ({C:mult}+#3#{})",
+			"When 8 is scored gain a tarrot card",
+			"{s:0.8}Untold riches lie in the future{}"
+		}
+	},
+    blueprint_compat = true,
+    rarity = "fuse_fusion",
+    cost = 15,
+    atlas = 'Sprites',
+    pos = { x = 0, y = 3 },
+    config = { extra = { mult = 2, current_mult = 0 } },
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.mult, card.ability.extra.mult * (G.GAME.consumeable_usage_total and G.GAME.consumeable_usage_total.tarot or 0), card.ability.extra.current_mult } }
+    end,
+    calculate = function(self, card, context)
+        if context.using_consumeable and context.consumeable.ability.set == "Tarot" then
+            return {
+                message = localize { type = 'variable', key = 'a_mult', vars = { G.GAME.consumeable_usage_total.tarot * card.ability.extra.mult } },
+            }
+        end
+        if context.joker_main then
+        	card.ability.extra.current_mult = card.ability.extra.mult * (G.GAME.consumeable_usage_total and G.GAME.consumeable_usage_total.tarot or 0)
+            return {
+            	message = localize { type = 'variable', key = 'a_mult', vars = { card.ability.extra.current_mult } },
+                mult_mod = card.ability.extra.current_mult
+            }
+        end
+        if context.individual and context.cardarea == G.play then
+            if (context.other_card:get_id() == 8) then
+                G.GAME.consumeable_buffer = G.GAME.consumeable_buffer + 1
+                return {
+                    extra = {
+                        message = localize('k_plus_tarot'),
+                        message_card = card,
+                        func = function()
+                            G.E_MANAGER:add_event(Event({
+                                func = (function()
+                                    SMODS.add_card {
+                                        set = 'Tarot'
+                                    }
+                                    G.GAME.consumeable_buffer = 0
+                                    return true
+                                end)
+                            }))
+                        end
+                    },
+                }
+            end
+        end
+    end,
+}
+
+FusionJokers.fusions:register_fusion{
+	jokers = {
+		{ name = "j_fortune_teller"},                            
+		{ name = "j_8_ball"}
+	},
+	result_joker = "j_bala_8tune_teller",
+	cost = 4
+}
+
+SMODS.Joker {
+    key = "the_soul",
+    loc_txt = {
+		name = 'SOUL',
+		text = {
+			"{C:money}+4${} when card scores",
+			"Each card scored gives 1+((money/10)*(1+(0.1*#3#))) {X:mult,C:white}Xmult{} and {X:chips,C:white}Xchips{}",
+			"The #3# is increased by 1 each card played",
+			"When card is played and scored, it retriggers",
+			"{s:0.8}The manifestation of ones being...{}"
+		}
+	},
+    blueprint_compat = true,
+    rarity = "bala_mythic",
+    atlas = 'Sprites',
+    cost = 80,
+    pos = { x = 1, y = 3 },
+    config = { extra = { Xmult = 1, money = 4, played = 0 } },
+    loc_vars = function(self, info_queue, card)
+        return { vars = { card.ability.extra.Xmult, card.ability.extra.money, card.ability.extra.played } }
+    end,
+    calculate = function(self, card, context)
+    	if context.individual and context.cardarea == G.play then
+			G.GAME.dollar_buffer = (G.GAME.dollar_buffer or 0) + to_big(card.ability.extra.money)
+			G.E_MANAGER:add_event(Event({func = (function() G.GAME.dollar_buffer = 0; return true end)}))
+			card.ability.extra.Xmult = 1 + (math.floor(to_number(G.GAME.dollars) / 10)*(1+(0.1*card.ability.extra.played)))
+			return {
+				dollars = card.ability.extra.money,
+				Xmult_mod = card.ability.extra.Xmult,
+				message = localize{type='variable',key='a_xmult',vars={card.ability.extra.Xmult}},
+				card = card
+			}
+		end
+		if context.repetition and context.cardarea == G.play then
+			return {
+				message = localize('k_again_ex'),
+				repetitions = 1,
+				card = card
+			}
+		end
+		if context.before and context.cardarea == G.jokers then
+			print(context.scoring_hand)
+        	card.ability.extra.played = card.ability.extra.played + (#context.scoring_hand / 2)
+			return {
+				message = localize('k_upgrade_ex'),
+				colour = G.C.MULT,
+				card = card
+			}
+		end
+    end
+}
+
+FusionJokers.fusions:register_fusion{
+	jokers = {
+		{ name = "j_bala_roaring_knight"},                            
+		{ name = "j_bala_light_angel"}
+	},
+	result_joker = "j_bala_the_soul",
+	cost = 20
 }
 
 -- TODO:
