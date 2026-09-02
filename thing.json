@@ -8,9 +8,9 @@
 	"priority": 301,
     "badge_colour": "c7638f",
     "dependencies": [
-        "Steamodded (>=1.0.0~BETA-1814a)",
-		"Amulet (>=3.5.2)",
+        "Steamodded (>=26.829.0)",
+		"Amulet (>=3.5.4)",
 		"FusionJokers (>=1.2.1)"
     ],
-    "version": "0.1.0"
+    "version": "0.1.1"
 }
